@@ -3,173 +3,381 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Mein KI Chat</title>
-<meta name="theme-color" content="#141414">
+<title>NEXUS · Command Center</title>
+<meta name="theme-color" content="#060a12">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="KI Chat">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@300;400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root{
-    --bg:#141414; --panel:#1d1d1d; --panel2:#242424;
-    --text:#ececec; --muted:#8a8a8a; --accent:#D97757;
+    --void:#060a12;
+    --void2:#0a1120;
+    --line:rgba(120,200,255,.14);
+    --line-strong:rgba(120,200,255,.30);
+    --glass:rgba(140,200,255,.045);
+    --glass2:rgba(140,200,255,.075);
+    --cyan:#38e0ff;
+    --cyan-dim:#2a9dc0;
+    --ice:#bfe9ff;
+    --amber:#ffb547;
+    --green:#54e6a8;
+    --text:#dbeaf6;
+    --muted:#6f8aa3;
+    --shadow:0 8px 40px rgba(0,0,0,.5);
   }
-  *{box-sizing:border-box}
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
   html,body{height:100%}
   body{
-    margin:0; background:var(--bg); color:var(--text);
-    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
-    display:flex; flex-direction:column;
+    margin:0; color:var(--text);
+    font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;
+    background:
+      radial-gradient(120% 60% at 50% -10%, rgba(56,224,255,.10), transparent 60%),
+      radial-gradient(90% 50% at 100% 100%, rgba(56,224,255,.06), transparent 55%),
+      var(--void);
+    background-attachment:fixed;
+    overflow-x:hidden;
+    -webkit-font-smoothing:antialiased;
   }
-  header{
-    padding:calc(14px + env(safe-area-inset-top)) 16px 14px 16px;
-    border-bottom:1px solid #2a2a2a;
-    display:flex; align-items:center; justify-content:space-between;
+  /* faint grid overlay for the HUD feel */
+  body::before{
+    content:""; position:fixed; inset:0; pointer-events:none; z-index:0;
+    background-image:
+      linear-gradient(rgba(120,200,255,.035) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(120,200,255,.035) 1px, transparent 1px);
+    background-size:44px 44px;
+    mask-image:radial-gradient(120% 90% at 50% 0%, #000 40%, transparent 85%);
   }
-  header h1{font-size:16px; margin:0; font-weight:600; letter-spacing:.2px}
-  header .dot{width:8px;height:8px;border-radius:50%;background:var(--accent);display:inline-block;margin-right:8px}
-  #settingsBtn{background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;padding:4px}
+  .wrap{position:relative; z-index:1; max-width:520px; margin:0 auto; padding:calc(16px + env(safe-area-inset-top)) 16px calc(96px + env(safe-area-inset-bottom))}
 
-  #chat{flex:1; overflow-y:auto; padding:16px; display:flex; flex-direction:column; gap:12px}
-  .msg{max-width:82%; padding:10px 14px; border-radius:16px; line-height:1.45; font-size:15px; white-space:pre-wrap; word-wrap:break-word}
-  .msg.user{align-self:flex-end; background:var(--accent); color:#1a1008; border-bottom-right-radius:4px}
-  .msg.bot{align-self:flex-start; background:var(--panel2); border-bottom-left-radius:4px}
-  .msg.system{align-self:center; color:var(--muted); font-size:13px; background:none; text-align:center}
+  /* ---------- Top bar ---------- */
+  .topbar{display:flex; align-items:center; justify-content:space-between; margin-bottom:8px}
+  .brand{display:flex; align-items:center; gap:10px}
+  .brand .glyph{
+    width:30px;height:30px;border-radius:8px;
+    border:1px solid var(--line-strong);
+    display:grid;place-items:center;
+    background:linear-gradient(135deg, rgba(56,224,255,.18), transparent);
+    box-shadow:inset 0 0 14px rgba(56,224,255,.25);
+  }
+  .brand .glyph span{width:8px;height:8px;border-radius:50%;background:var(--cyan);box-shadow:0 0 10px var(--cyan)}
+  .brand h1{font-family:'Chakra Petch';font-weight:600;font-size:15px;letter-spacing:.32em;margin:0;color:var(--ice)}
+  .status{font-family:'Chakra Petch';font-size:10px;letter-spacing:.22em;color:var(--muted);display:flex;align-items:center;gap:6px;padding:5px 10px;border:1px solid var(--line);border-radius:20px;background:var(--glass)}
+  .status .live{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);animation:blink 2.4s ease-in-out infinite}
+  @keyframes blink{0%,100%{opacity:1}50%{opacity:.35}}
 
-  #composer{
-    display:flex; align-items:flex-end; gap:8px;
-    padding:10px 12px calc(10px + env(safe-area-inset-bottom)) 12px;
-    border-top:1px solid #2a2a2a; background:var(--panel);
-  }
-  textarea{
-    flex:1; resize:none; max-height:120px; min-height:40px;
-    background:var(--panel2); color:var(--text); border:1px solid #333;
-    border-radius:14px; padding:10px 12px; font-size:15px; font-family:inherit;
-  }
-  button.icon{
-    width:42px;height:42px;border-radius:50%;border:none;
-    background:var(--panel2); color:var(--text); font-size:18px; cursor:pointer;
-    display:flex;align-items:center;justify-content:center; flex-shrink:0;
-  }
-  button.icon.active{background:var(--accent); color:#1a1008}
-  #sendBtn{background:var(--accent); color:#1a1008}
+  /* ---------- Core ---------- */
+  .core{position:relative; height:250px; display:grid; place-items:center; margin:6px 0 2px}
+  .core svg{position:absolute; inset:0; margin:auto; width:250px; height:250px}
+  .ring-rot{transform-origin:125px 125px; animation:spin 26s linear infinite}
+  .ring-rot.rev{animation-duration:40s; animation-direction:reverse}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .core .readout{position:relative; text-align:center; z-index:2}
+  .core .time{font-family:'Chakra Petch';font-weight:600;font-size:46px;line-height:1;letter-spacing:.02em;color:#fff;text-shadow:0 0 24px rgba(56,224,255,.45)}
+  .core .time .sec{font-size:18px;color:var(--cyan);vertical-align:top;margin-left:2px;letter-spacing:.1em}
+  .core .date{font-family:'Chakra Petch';font-size:11px;letter-spacing:.28em;color:var(--muted);margin-top:8px;text-transform:uppercase}
+  .core .greet{font-size:13px;color:var(--ice);margin-top:12px;font-weight:500}
+  .core .greet b{color:var(--cyan);cursor:pointer;border-bottom:1px dashed var(--line-strong);padding-bottom:1px}
+  .pulse{animation:pulse 3.6s ease-in-out infinite}
+  @keyframes pulse{0%,100%{opacity:.5}50%{opacity:1}}
 
-  #settingsPanel{position:fixed; inset:0; background:rgba(0,0,0,.6); display:none; align-items:center; justify-content:center; z-index:10; padding:20px}
-  #settingsPanel.open{display:flex}
-  .card{background:var(--panel); border-radius:16px; padding:20px; width:100%; max-width:360px}
-  .card h2{margin:0 0 12px; font-size:16px}
-  .card label{font-size:13px; color:var(--muted); display:block; margin-bottom:6px}
-  .card input{width:100%; padding:10px; border-radius:10px; border:1px solid #333; background:var(--panel2); color:var(--text); font-size:14px; margin-bottom:6px}
-  .hint{font-size:12px;color:var(--muted);margin-bottom:14px}
-  .card .row{display:flex; gap:8px; justify-content:flex-end}
-  .card button{padding:10px 16px; border-radius:10px; border:none; font-size:14px; cursor:pointer}
-  .card .save{background:var(--accent); color:#1a1008}
-  .card .cancel{background:var(--panel2); color:var(--text)}
+  /* ---------- Finance hero ---------- */
+  .hero{
+    position:relative; border:1px solid var(--line); border-radius:18px; padding:18px;
+    background:linear-gradient(160deg, var(--glass2), rgba(10,17,32,.6));
+    box-shadow:var(--shadow); overflow:hidden; cursor:pointer;
+    transition:transform .18s ease, border-color .18s ease;
+  }
+  .hero:active{transform:scale(.985); border-color:var(--line-strong)}
+  .hero::after{content:"";position:absolute;right:-40px;top:-40px;width:160px;height:160px;border-radius:50%;background:radial-gradient(circle,rgba(56,224,255,.14),transparent 70%)}
+  .hero .lbl{font-family:'Chakra Petch';font-size:10px;letter-spacing:.24em;color:var(--muted);text-transform:uppercase;display:flex;align-items:center;gap:8px}
+  .hero .bal{font-family:'Chakra Petch';font-weight:600;font-size:38px;margin:8px 0 4px;color:#fff;letter-spacing:.01em}
+  .hero .bal .cur{font-size:20px;color:var(--cyan-dim);margin-right:4px}
+  .hero .trend{font-size:12px;color:var(--green);display:flex;align-items:center;gap:6px}
+  .hero .spark{position:absolute;right:16px;bottom:14px;opacity:.9}
+  .chev{color:var(--muted);font-size:12px}
+
+  /* ---------- Grid ---------- */
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
+  .tile{
+    position:relative; border:1px solid var(--line); border-radius:16px; padding:14px;
+    background:var(--glass); min-height:112px; cursor:pointer;
+    display:flex;flex-direction:column;justify-content:space-between;
+    transition:transform .18s ease, border-color .18s ease, background .18s ease;
+  }
+  .tile:active{transform:scale(.97)}
+  .tile:hover{border-color:var(--line-strong); background:var(--glass2)}
+  .tile .thead{display:flex;align-items:center;justify-content:space-between}
+  .tile .ico{width:32px;height:32px;border-radius:9px;border:1px solid var(--line);display:grid;place-items:center;background:rgba(56,224,255,.06);color:var(--cyan)}
+  .tile .tag{font-family:'Chakra Petch';font-size:9px;letter-spacing:.18em;color:var(--muted);text-transform:uppercase}
+  .tile .big{font-family:'Chakra Petch';font-weight:600;font-size:24px;color:#fff;margin-top:10px;line-height:1}
+  .tile .sub{font-size:12px;color:var(--muted);margin-top:5px}
+  .tile.alert .ico{color:var(--amber);border-color:rgba(255,181,71,.3);background:rgba(255,181,71,.07)}
+  .tile.alert .dotmark{position:absolute;top:12px;right:12px;width:7px;height:7px;border-radius:50%;background:var(--amber);box-shadow:0 0 8px var(--amber)}
+
+  /* health rings mini */
+  .hrings{display:flex;gap:2px;align-items:flex-end;margin-top:6px}
+
+  /* ---------- Assistant bar ---------- */
+  .dock{
+    position:fixed;left:0;right:0;bottom:0;z-index:5;
+    padding:12px 16px calc(12px + env(safe-area-inset-bottom));
+    background:linear-gradient(to top, var(--void) 55%, transparent);
+  }
+  .dock-inner{max-width:520px;margin:0 auto;display:flex;align-items:center;gap:10px;
+    border:1px solid var(--line-strong);border-radius:16px;padding:8px 8px 8px 16px;
+    background:rgba(10,17,32,.85);backdrop-filter:blur(12px);box-shadow:var(--shadow)}
+  .dock-inner input{flex:1;background:none;border:none;color:var(--text);font-size:15px;font-family:'Inter'}
+  .dock-inner input::placeholder{color:var(--muted)}
+  .dock-inner input:focus{outline:none}
+  .mic{width:44px;height:44px;border-radius:12px;border:1px solid var(--line-strong);
+    background:linear-gradient(135deg,rgba(56,224,255,.22),rgba(56,224,255,.05));
+    color:var(--cyan);font-size:18px;display:grid;place-items:center;cursor:pointer;flex-shrink:0}
+  .mic.active{animation:micpulse 1.1s ease-in-out infinite}
+  @keyframes micpulse{0%,100%{box-shadow:0 0 0 0 rgba(56,224,255,.4)}50%{box-shadow:0 0 0 8px rgba(56,224,255,0)}}
+
+  /* ---------- Detail sheet ---------- */
+  .scrim{position:fixed;inset:0;z-index:20;background:rgba(3,6,12,.7);backdrop-filter:blur(4px);opacity:0;pointer-events:none;transition:opacity .25s}
+  .scrim.open{opacity:1;pointer-events:auto}
+  .sheet{position:fixed;left:0;right:0;bottom:0;z-index:21;max-width:520px;margin:0 auto;
+    background:linear-gradient(180deg,var(--void2),var(--void));
+    border:1px solid var(--line-strong);border-bottom:none;border-radius:22px 22px 0 0;
+    padding:10px 20px calc(24px + env(safe-area-inset-bottom));
+    transform:translateY(102%);transition:transform .3s cubic-bezier(.22,1,.36,1);
+    box-shadow:0 -20px 60px rgba(0,0,0,.6);max-height:82vh;overflow-y:auto}
+  .sheet.open{transform:translateY(0)}
+  .handle{width:40px;height:4px;border-radius:4px;background:var(--line-strong);margin:6px auto 16px}
+  .sheet h2{font-family:'Chakra Petch';font-size:17px;letter-spacing:.06em;margin:0 0 4px;color:#fff;display:flex;align-items:center;gap:10px}
+  .sheet .sh-sub{font-size:12px;color:var(--muted);margin-bottom:18px;font-family:'Chakra Petch';letter-spacing:.14em;text-transform:uppercase}
+  .row{display:flex;align-items:center;justify-content:space-between;padding:13px 0;border-bottom:1px solid var(--line)}
+  .row:last-child{border-bottom:none}
+  .row .rl{font-size:14px;color:var(--text)}
+  .row .rl small{display:block;color:var(--muted);font-size:11px;margin-top:2px}
+  .row .rv{font-family:'Chakra Petch';font-size:15px;color:var(--ice);font-weight:500}
+  .row .rv.pos{color:var(--green)} .row .rv.neg{color:var(--amber)}
+  .note{margin-top:18px;font-size:12px;color:var(--muted);line-height:1.5;border:1px dashed var(--line);border-radius:12px;padding:12px}
+
+  @media (prefers-reduced-motion:reduce){*{animation:none!important}}
 </style>
 </head>
 <body>
+<div class="wrap">
 
-<header>
-  <h1><span class="dot"></span>Mein KI Chat</h1>
-  <button id="settingsBtn" title="Einstellungen">⚙️</button>
-</header>
-
-<div id="chat">
-  <div class="msg system">Tippe auf ⚙️ und trage deinen Anthropic API-Key ein, um loszulegen.</div>
-</div>
-
-<div id="composer">
-  <button class="icon" id="micBtn" title="Spracheingabe">🎤</button>
-  <textarea id="input" rows="1" placeholder="Nachricht schreiben…"></textarea>
-  <button class="icon active" id="speakBtn" title="Antworten vorlesen">🔊</button>
-  <button class="icon" id="sendBtn" title="Senden">➤</button>
-</div>
-
-<div id="settingsPanel">
-  <div class="card">
-    <h2>Einstellungen</h2>
-    <label for="apiKey">Anthropic API-Key</label>
-    <input id="apiKey" type="password" placeholder="sk-ant-...">
-    <div class="hint">Wird nur lokal auf diesem Gerät gespeichert.</div>
-    <div class="row">
-      <button class="cancel" id="closeSettings">Abbrechen</button>
-      <button class="save" id="saveSettings">Speichern</button>
+  <div class="topbar">
+    <div class="brand">
+      <div class="glyph"><span></span></div>
+      <h1>NEXUS</h1>
     </div>
+    <div class="status"><span class="live"></span>SYSTEME ONLINE</div>
+  </div>
+
+  <!-- CORE -->
+  <div class="core">
+    <svg viewBox="0 0 250 250" fill="none">
+      <circle cx="125" cy="125" r="118" stroke="rgba(120,200,255,.10)" stroke-width="1"/>
+      <g class="ring-rot">
+        <circle cx="125" cy="125" r="108" stroke="rgba(56,224,255,.35)" stroke-width="1.5" stroke-dasharray="4 10"/>
+      </g>
+      <circle cx="125" cy="125" r="96" stroke="rgba(120,200,255,.08)" stroke-width="8"/>
+      <circle class="pulse" cx="125" cy="125" r="96" stroke="var(--cyan)" stroke-width="2.5"
+              stroke-dasharray="150 453" stroke-linecap="round" transform="rotate(-90 125 125)"/>
+      <g class="ring-rot rev">
+        <circle cx="125" cy="125" r="80" stroke="rgba(56,224,255,.22)" stroke-width="1" stroke-dasharray="2 6"/>
+        <circle cx="125" cy="17" r="2.5" fill="var(--cyan)"/>
+      </g>
+    </svg>
+    <div class="readout">
+      <div class="time" id="clock">--:--<span class="sec" id="sec">00</span></div>
+      <div class="date" id="date">— —</div>
+      <div class="greet" id="greet">Willkommen zurück, <b id="name">Commander</b></div>
+    </div>
+  </div>
+
+  <!-- FINANCE HERO -->
+  <div class="hero" data-detail="finance">
+    <div class="lbl">Gesamtvermögen · Girokonto <span class="chev">▸ Details</span></div>
+    <div class="bal"><span class="cur">€</span>4.283<span style="color:var(--cyan-dim)">,50</span></div>
+    <div class="trend">▲ +2,4 % diesen Monat &nbsp;·&nbsp; +€214,80</div>
+    <svg class="spark" width="120" height="42" viewBox="0 0 120 42" fill="none">
+      <polyline points="0,34 18,30 34,32 52,22 70,26 88,14 104,18 120,6"
+        stroke="var(--cyan)" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+      <polyline points="0,34 18,30 34,32 52,22 70,26 88,14 104,18 120,6 120,42 0,42"
+        fill="url(#g)" opacity=".25" stroke="none"/>
+      <defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="var(--cyan)"/><stop offset="1" stop-color="transparent"/>
+      </linearGradient></defs>
+    </svg>
+  </div>
+
+  <!-- GRID -->
+  <div class="grid">
+
+    <div class="tile" data-detail="calendar">
+      <div class="thead">
+        <div class="ico">▤</div>
+        <div class="tag">Heute</div>
+      </div>
+      <div>
+        <div class="big">3</div>
+        <div class="sub">Nächster: 14:30 · Zahnarzt</div>
+      </div>
+    </div>
+
+    <div class="tile" data-detail="tasks">
+      <div class="thead">
+        <div class="ico">✓</div>
+        <div class="tag">Aufgaben</div>
+      </div>
+      <div>
+        <div class="big">5 <span style="font-size:13px;color:var(--muted)">offen</span></div>
+        <div class="sub">2 fällig heute</div>
+      </div>
+    </div>
+
+    <div class="tile" data-detail="weather">
+      <div class="thead">
+        <div class="ico">☁</div>
+        <div class="tag">Wetter</div>
+      </div>
+      <div>
+        <div class="big">18°</div>
+        <div class="sub">Bewölkt · Regen ab 17 Uhr</div>
+      </div>
+    </div>
+
+    <div class="tile" data-detail="health">
+      <div class="thead">
+        <div class="ico">♥</div>
+        <div class="tag">Vitalwerte</div>
+      </div>
+      <div>
+        <div class="big">6.240</div>
+        <div class="sub">Schritte · 71 % vom Ziel</div>
+      </div>
+    </div>
+
+    <div class="tile alert" data-detail="inbox">
+      <div class="dotmark"></div>
+      <div class="thead">
+        <div class="ico">✉</div>
+        <div class="tag">Posteingang</div>
+      </div>
+      <div>
+        <div class="big">4</div>
+        <div class="sub">1 wichtig · 3 ungelesen</div>
+      </div>
+    </div>
+
+    <div class="tile" data-detail="energy">
+      <div class="thead">
+        <div class="ico">⌁</div>
+        <div class="tag">Zuhause</div>
+      </div>
+      <div>
+        <div class="big">21°</div>
+        <div class="sub">3 Geräte aktiv</div>
+      </div>
+    </div>
+
   </div>
 </div>
 
+<!-- DOCK -->
+<div class="dock">
+  <div class="dock-inner">
+    <input id="ask" type="text" placeholder="Frag NEXUS etwas…">
+    <button class="mic" id="mic" aria-label="Sprechen">🎤</button>
+  </div>
+</div>
+
+<!-- SHEET -->
+<div class="scrim" id="scrim"></div>
+<div class="sheet" id="sheet" role="dialog" aria-modal="true">
+  <div class="handle"></div>
+  <div id="sheetBody"></div>
+</div>
+
 <script>
-const chatEl=document.getElementById('chat'),inputEl=document.getElementById('input'),
-sendBtn=document.getElementById('sendBtn'),micBtn=document.getElementById('micBtn'),
-speakBtn=document.getElementById('speakBtn'),settingsPanel=document.getElementById('settingsPanel'),
-settingsBtn=document.getElementById('settingsBtn'),apiKeyInput=document.getElementById('apiKey');
+  // ---------- Clock + greeting ----------
+  const clock=document.getElementById('clock'), sec=document.getElementById('sec'), dateEl=document.getElementById('date'), greetEl=document.getElementById('greet'), nameEl=document.getElementById('name');
+  const days=['So','Mo','Di','Mi','Do','Fr','Sa'];
+  const months=['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
+  function tick(){
+    const n=new Date();
+    const h=String(n.getHours()).padStart(2,'0'), m=String(n.getMinutes()).padStart(2,'0'), s=String(n.getSeconds()).padStart(2,'0');
+    clock.firstChild.textContent=`${h}:${m}`; sec.textContent=s;
+    dateEl.textContent=`${days[n.getDay()]} · ${n.getDate()}. ${months[n.getMonth()]} ${n.getFullYear()}`;
+    const hr=n.getHours();
+    const g = hr<5?'Gute Nacht':hr<11?'Guten Morgen':hr<18?'Guten Tag':'Guten Abend';
+    greetEl.childNodes[0].textContent = g+', ';
+  }
+  setInterval(tick,1000); tick();
 
-let history=[], ttsEnabled=true;
+  // ---------- Editable name ----------
+  const savedName=localStorage.getItem('nexus_name'); if(savedName) nameEl.textContent=savedName;
+  nameEl.onclick=()=>{ const v=prompt('Wie soll NEXUS dich nennen?', nameEl.textContent); if(v&&v.trim()){nameEl.textContent=v.trim(); localStorage.setItem('nexus_name',v.trim());} };
 
-const loadKey=()=>localStorage.getItem('anthropic_api_key')||'';
-const saveKey=k=>localStorage.setItem('anthropic_api_key',k);
-apiKeyInput.value=loadKey();
+  // ---------- Detail sheets ----------
+  const scrim=document.getElementById('scrim'), sheet=document.getElementById('sheet'), body=document.getElementById('sheetBody');
+  const details={
+    finance:{icon:'€',title:'Finanzen',sub:'Konto · Vermögen',rows:[
+      ['Girokonto','€3.120,50','pos'],['Tagesgeld','€1.163,00','pos'],['Ausgaben diesen Monat','−€1.847,20','neg'],
+      ['Größte Position','Miete · €920,00',''],['Nächste Abbuchung','Strom · €78 · in 3 Tagen','']
+    ],note:'Demo-Werte. Später verbinden wir dein echtes Konto (z. B. über eine Banking-Schnittstelle), damit hier dein tatsächlicher Kontostand live erscheint.'},
+    calendar:{icon:'▤',title:'Termine heute',sub:'3 Ereignisse',rows:[
+      ['14:30 · Zahnarzt','Praxis Dr. Bauer',''],['17:00 · Team-Call','Videokonferenz',''],['19:30 · Sport','Fitnessstudio','']
+    ],note:'Später an deinen Kalender angebunden (Apple/Google), dann stehen hier deine echten Termine.'},
+    tasks:{icon:'✓',title:'Aufgaben',sub:'5 offen · 2 heute fällig',rows:[
+      ['Rechnung bezahlen','Heute fällig','neg'],['Rückruf Werkstatt','Heute fällig','neg'],
+      ['Geschenk besorgen','Diese Woche',''],['Steuerunterlagen','Nächste Woche',''],['Buch zurückgeben','Kein Datum','']
+    ],note:'Wird mit deiner Erinnerungen-/To-do-App synchronisiert.'},
+    weather:{icon:'☁',title:'Wetter',sub:'Dein Standort',rows:[
+      ['Jetzt','18° · Bewölkt',''],['Gefühlt','16°',''],['Regen','ab 17:00 · 80 %','neg'],
+      ['Höchstwert','21°','pos'],['Wind','14 km/h','']
+    ],note:'Nutzt später deinen Standort für echte Live-Vorhersagen.'},
+    health:{icon:'♥',title:'Vitalwerte',sub:'Heute',rows:[
+      ['Schritte','6.240 / 8.800',''],['Aktive Energie','412 kcal','pos'],['Puls (Ruhe)','62 bpm',''],
+      ['Schlaf letzte Nacht','7 h 12 min','pos'],['Stehstunden','9 / 12','']
+    ],note:'Verbindet sich später mit Apple Health / Google Fit.'},
+    inbox:{icon:'✉',title:'Posteingang',sub:'4 neue Nachrichten',rows:[
+      ['Vermieter · Wichtig','Nebenkostenabrechnung','neg'],['Amazon','Bestellung versandt',''],
+      ['Newsletter','Wochenrückblick',''],['Unbekannt','Betreff: Ihr Gewinn …','']
+    ],note:'Später mit deinem Mail-Postfach verbunden.'},
+    energy:{icon:'⌁',title:'Zuhause',sub:'Smart-Home',rows:[
+      ['Wohnzimmer','21° · Heizung an',''],['Lichter','2 an',''],['Stromverbrauch heute','4,8 kWh',''],
+      ['Waschmaschine','Fertig in 22 min',''],['Türschloss','Verriegelt','pos']
+    ],note:'Bindet später deine Smart-Home-Geräte ein.'}
+  };
+  function openSheet(key){
+    const d=details[key]; if(!d)return;
+    body.innerHTML=`<h2><span style="color:var(--cyan)">${d.icon}</span> ${d.title}</h2>
+      <div class="sh-sub">${d.sub}</div>`+
+      d.rows.map(r=>`<div class="row"><div class="rl">${r[0]}</div><div class="rv ${r[2]}">${r[1]}</div></div>`).join('')+
+      `<div class="note">↯ ${d.note}</div>`;
+    scrim.classList.add('open'); sheet.classList.add('open');
+  }
+  function closeSheet(){ scrim.classList.remove('open'); sheet.classList.remove('open'); }
+  document.querySelectorAll('[data-detail]').forEach(el=>el.addEventListener('click',()=>openSheet(el.dataset.detail)));
+  scrim.addEventListener('click',closeSheet);
 
-settingsBtn.onclick=()=>settingsPanel.classList.add('open');
-document.getElementById('closeSettings').onclick=()=>settingsPanel.classList.remove('open');
-document.getElementById('saveSettings').onclick=()=>{
-  saveKey(apiKeyInput.value.trim());
-  settingsPanel.classList.remove('open');
-  addMessage('system','API-Key gespeichert.');
-};
-if(!loadKey()) settingsPanel.classList.add('open');
-
-function addMessage(role,text){
-  const d=document.createElement('div');
-  d.className='msg '+role; d.textContent=text;
-  chatEl.appendChild(d); chatEl.scrollTop=chatEl.scrollHeight;
-  return d;
-}
-function autoGrow(){inputEl.style.height='auto'; inputEl.style.height=Math.min(inputEl.scrollHeight,120)+'px';}
-inputEl.addEventListener('input',autoGrow);
-
-// Text-to-Speech
-speakBtn.onclick=()=>{ttsEnabled=!ttsEnabled; speakBtn.classList.toggle('active',ttsEnabled); if(!ttsEnabled)speechSynthesis.cancel();};
-function speak(t){
-  if(!ttsEnabled||!('speechSynthesis'in window))return;
-  speechSynthesis.cancel();
-  const u=new SpeechSynthesisUtterance(t); u.lang='de-DE'; speechSynthesis.speak(u);
-}
-
-// Speech-to-Text
-let recognition=null;
-const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-if(SR){
-  recognition=new SR(); recognition.lang='de-DE'; recognition.interimResults=false;
-  recognition.onresult=e=>{inputEl.value+=(inputEl.value?' ':'')+e.results[0][0].transcript; autoGrow();};
-  recognition.onend=()=>micBtn.classList.remove('active');
-}else{micBtn.style.opacity=.4; micBtn.title='Spracheingabe hier nicht unterstützt';}
-micBtn.onclick=()=>{
-  if(!recognition)return;
-  micBtn.classList.toggle('active');
-  micBtn.classList.contains('active')?recognition.start():recognition.stop();
-};
-
-async function sendMessage(){
-  const text=inputEl.value.trim(); if(!text)return;
-  const key=loadKey(); if(!key){settingsPanel.classList.add('open');return;}
-  addMessage('user',text); history.push({role:'user',content:text});
-  inputEl.value=''; autoGrow();
-  const thinking=addMessage('bot','…');
-  try{
-    const res=await fetch('https://api.anthropic.com/v1/messages',{
-      method:'POST',
-      headers:{'Content-Type':'application/json','x-api-key':key,
-        'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1024,messages:history})
-    });
-    const data=await res.json();
-    if(data.error){thinking.textContent='Fehler: '+data.error.message; return;}
-    const reply=data.content.map(b=>b.text||'').join('\n').trim();
-    thinking.textContent=reply; history.push({role:'assistant',content:reply}); speak(reply);
-  }catch(err){thinking.textContent='Netzwerkfehler: '+err.message;}
-}
-sendBtn.onclick=sendMessage;
-inputEl.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMessage();}});
+  // ---------- Assistant input (Modell folgt) ----------
+  const ask=document.getElementById('ask'), mic=document.getElementById('mic');
+  function respond(){
+    if(!ask.value.trim())return;
+    const q=ask.value.trim(); ask.value='';
+    body.innerHTML=`<h2><span style="color:var(--cyan)">◈</span> NEXUS</h2>
+      <div class="sh-sub">Anfrage empfangen</div>
+      <div class="row"><div class="rl">Du fragst</div><div class="rv">„${q}"</div></div>
+      <div class="note">↯ Das KI-Modell hängen wir im nächsten Schritt an — dann antwortet NEXUS hier wirklich. Aktuell steht nur die Oberfläche.</div>`;
+    scrim.classList.add('open'); sheet.classList.add('open');
+  }
+  ask.addEventListener('keydown',e=>{if(e.key==='Enter')respond();});
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition; let rec=null;
+  if(SR){ rec=new SR(); rec.lang='de-DE'; rec.interimResults=false;
+    rec.onresult=e=>{ask.value=e.results[0][0].transcript;}; rec.onend=()=>mic.classList.remove('active'); }
+  mic.addEventListener('click',()=>{ if(!rec){alert('Spracheingabe wird hier nicht unterstützt.');return;}
+    mic.classList.toggle('active'); mic.classList.contains('active')?rec.start():rec.stop(); });
 </script>
 </body>
 </html>
