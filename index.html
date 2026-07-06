@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Mein KI Chat</title>
+<meta name="theme-color" content="#141414">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="KI Chat">
+<style>
+  :root{
+    --bg:#141414; --panel:#1d1d1d; --panel2:#242424;
+    --text:#ececec; --muted:#8a8a8a; --accent:#D97757;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0; background:var(--bg); color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    display:flex; flex-direction:column;
+  }
+  header{
+    padding:calc(14px + env(safe-area-inset-top)) 16px 14px 16px;
+    border-bottom:1px solid #2a2a2a;
+    display:flex; align-items:center; justify-content:space-between;
+  }
+  header h1{font-size:16px; margin:0; font-weight:600; letter-spacing:.2px}
+  header .dot{width:8px;height:8px;border-radius:50%;background:var(--accent);display:inline-block;margin-right:8px}
+  #settingsBtn{background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;padding:4px}
+
+  #chat{flex:1; overflow-y:auto; padding:16px; display:flex; flex-direction:column; gap:12px}
+  .msg{max-width:82%; padding:10px 14px; border-radius:16px; line-height:1.45; font-size:15px; white-space:pre-wrap; word-wrap:break-word}
+  .msg.user{align-self:flex-end; background:var(--accent); color:#1a1008; border-bottom-right-radius:4px}
+  .msg.bot{align-self:flex-start; background:var(--panel2); border-bottom-left-radius:4px}
+  .msg.system{align-self:center; color:var(--muted); font-size:13px; background:none; text-align:center}
+
+  #composer{
+    display:flex; align-items:flex-end; gap:8px;
+    padding:10px 12px calc(10px + env(safe-area-inset-bottom)) 12px;
+    border-top:1px solid #2a2a2a; background:var(--panel);
+  }
+  textarea{
+    flex:1; resize:none; max-height:120px; min-height:40px;
+    background:var(--panel2); color:var(--text); border:1px solid #333;
+    border-radius:14px; padding:10px 12px; font-size:15px; font-family:inherit;
+  }
+  button.icon{
+    width:42px;height:42px;border-radius:50%;border:none;
+    background:var(--panel2); color:var(--text); font-size:18px; cursor:pointer;
+    display:flex;align-items:center;justify-content:center; flex-shrink:0;
+  }
+  button.icon.active{background:var(--accent); color:#1a1008}
+  #sendBtn{background:var(--accent); color:#1a1008}
+
+  #settingsPanel{position:fixed; inset:0; background:rgba(0,0,0,.6); display:none; align-items:center; justify-content:center; z-index:10; padding:20px}
+  #settingsPanel.open{display:flex}
+  .card{background:var(--panel); border-radius:16px; padding:20px; width:100%; max-width:360px}
+  .card h2{margin:0 0 12px; font-size:16px}
+  .card label{font-size:13px; color:var(--muted); display:block; margin-bottom:6px}
+  .card input{width:100%; padding:10px; border-radius:10px; border:1px solid #333; background:var(--panel2); color:var(--text); font-size:14px; margin-bottom:6px}
+  .hint{font-size:12px;color:var(--muted);margin-bottom:14px}
+  .card .row{display:flex; gap:8px; justify-content:flex-end}
+  .card button{padding:10px 16px; border-radius:10px; border:none; font-size:14px; cursor:pointer}
+  .card .save{background:var(--accent); color:#1a1008}
+  .card .cancel{background:var(--panel2); color:var(--text)}
+</style>
+</head>
+<body>
+
+<header>
+  <h1><span class="dot"></span>Mein KI Chat</h1>
+  <button id="settingsBtn" title="Einstellungen">⚙️</button>
+</header>
+
+<div id="chat">
+  <div class="msg system">Tippe auf ⚙️ und trage deinen Anthropic API-Key ein, um loszulegen.</div>
+</div>
+
+<div id="composer">
+  <button class="icon" id="micBtn" title="Spracheingabe">🎤</button>
+  <textarea id="input" rows="1" placeholder="Nachricht schreiben…"></textarea>
+  <button class="icon active" id="speakBtn" title="Antworten vorlesen">🔊</button>
+  <button class="icon" id="sendBtn" title="Senden">➤</button>
+</div>
+
+<div id="settingsPanel">
+  <div class="card">
+    <h2>Einstellungen</h2>
+    <label for="apiKey">Anthropic API-Key</label>
+    <input id="apiKey" type="password" placeholder="sk-ant-...">
+    <div class="hint">Wird nur lokal auf diesem Gerät gespeichert.</div>
+    <div class="row">
+      <button class="cancel" id="closeSettings">Abbrechen</button>
+      <button class="save" id="saveSettings">Speichern</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const chatEl=document.getElementById('chat'),inputEl=document.getElementById('input'),
+sendBtn=document.getElementById('sendBtn'),micBtn=document.getElementById('micBtn'),
+speakBtn=document.getElementById('speakBtn'),settingsPanel=document.getElementById('settingsPanel'),
+settingsBtn=document.getElementById('settingsBtn'),apiKeyInput=document.getElementById('apiKey');
+
+let history=[], ttsEnabled=true;
+
+const loadKey=()=>localStorage.getItem('anthropic_api_key')||'';
+const saveKey=k=>localStorage.setItem('anthropic_api_key',k);
+apiKeyInput.value=loadKey();
+
+settingsBtn.onclick=()=>settingsPanel.classList.add('open');
+document.getElementById('closeSettings').onclick=()=>settingsPanel.classList.remove('open');
+document.getElementById('saveSettings').onclick=()=>{
+  saveKey(apiKeyInput.value.trim());
+  settingsPanel.classList.remove('open');
+  addMessage('system','API-Key gespeichert.');
+};
+if(!loadKey()) settingsPanel.classList.add('open');
+
+function addMessage(role,text){
+  const d=document.createElement('div');
+  d.className='msg '+role; d.textContent=text;
+  chatEl.appendChild(d); chatEl.scrollTop=chatEl.scrollHeight;
+  return d;
+}
+function autoGrow(){inputEl.style.height='auto'; inputEl.style.height=Math.min(inputEl.scrollHeight,120)+'px';}
+inputEl.addEventListener('input',autoGrow);
+
+// Text-to-Speech
+speakBtn.onclick=()=>{ttsEnabled=!ttsEnabled; speakBtn.classList.toggle('active',ttsEnabled); if(!ttsEnabled)speechSynthesis.cancel();};
+function speak(t){
+  if(!ttsEnabled||!('speechSynthesis'in window))return;
+  speechSynthesis.cancel();
+  const u=new SpeechSynthesisUtterance(t); u.lang='de-DE'; speechSynthesis.speak(u);
+}
+
+// Speech-to-Text
+let recognition=null;
+const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+if(SR){
+  recognition=new SR(); recognition.lang='de-DE'; recognition.interimResults=false;
+  recognition.onresult=e=>{inputEl.value+=(inputEl.value?' ':'')+e.results[0][0].transcript; autoGrow();};
+  recognition.onend=()=>micBtn.classList.remove('active');
+}else{micBtn.style.opacity=.4; micBtn.title='Spracheingabe hier nicht unterstützt';}
+micBtn.onclick=()=>{
+  if(!recognition)return;
+  micBtn.classList.toggle('active');
+  micBtn.classList.contains('active')?recognition.start():recognition.stop();
+};
+
+async function sendMessage(){
+  const text=inputEl.value.trim(); if(!text)return;
+  const key=loadKey(); if(!key){settingsPanel.classList.add('open');return;}
+  addMessage('user',text); history.push({role:'user',content:text});
+  inputEl.value=''; autoGrow();
+  const thinking=addMessage('bot','…');
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':key,
+        'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1024,messages:history})
+    });
+    const data=await res.json();
+    if(data.error){thinking.textContent='Fehler: '+data.error.message; return;}
+    const reply=data.content.map(b=>b.text||'').join('\n').trim();
+    thinking.textContent=reply; history.push({role:'assistant',content:reply}); speak(reply);
+  }catch(err){thinking.textContent='Netzwerkfehler: '+err.message;}
+}
+sendBtn.onclick=sendMessage;
+inputEl.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMessage();}});
+</script>
+</body>
+</html>
