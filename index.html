@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>NEXUS · Command Center</title>
+<meta name="theme-color" content="#060a12">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@300;400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --void:#060a12; --void2:#0a1120;
+    --line:rgba(120,200,255,.14); --line-strong:rgba(120,200,255,.30);
+    --glass:rgba(140,200,255,.045); --glass2:rgba(140,200,255,.075);
+    --text:#dbeaf6; --muted:#6f8aa3;
+    --green:#54e6a8; --amber:#ffb547;
+    --shadow:0 8px 40px rgba(0,0,0,.5);
+    /* accent (per JS überschrieben) */
+    --accent:#38e0ff; --accent-2:rgba(56,224,255,.65);
+    --accent-weak:rgba(56,224,255,.13); --accent-soft:rgba(56,224,255,.22);
+    --accent-glow:rgba(56,224,255,.42); --ice:#bfe9ff;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
+  html,body{height:100%}
+  body{
+    margin:0; color:var(--text);
+    font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;
+    background:
+      radial-gradient(120% 60% at 50% -10%, var(--accent-weak), transparent 60%),
+      radial-gradient(90% 50% at 100% 100%, var(--accent-weak), transparent 55%),
+      var(--void);
+    background-attachment:fixed; overflow-x:hidden; -webkit-font-smoothing:antialiased;
+  }
+  body::before{
+    content:""; position:fixed; inset:0; pointer-events:none; z-index:0;
+    background-image:
+      linear-gradient(rgba(120,200,255,.035) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(120,200,255,.035) 1px, transparent 1px);
+    background-size:44px 44px;
+    mask-image:radial-gradient(120% 90% at 50% 0%, #000 40%, transparent 85%);
+  }
+  .wrap{position:relative; z-index:1; max-width:520px; margin:0 auto; padding:calc(16px + env(safe-area-inset-top)) 16px calc(96px + env(safe-area-inset-bottom))}
+
+  .topbar{display:flex; align-items:center; justify-content:space-between; margin-bottom:8px}
+  .brand{display:flex; align-items:center; gap:10px}
+  .brand .glyph{width:30px;height:30px;border-radius:8px;border:1px solid var(--line-strong);
+    display:grid;place-items:center;background:linear-gradient(135deg,var(--accent-soft),transparent);
+    box-shadow:inset 0 0 14px var(--accent-weak)}
+  .brand .glyph span{width:8px;height:8px;border-radius:50%;background:var(--accent);box-shadow:0 0 10px var(--accent)}
+  .brand h1{font-family:'Chakra Petch';font-weight:600;font-size:15px;letter-spacing:.32em;margin:0;color:var(--ice)}
+  .tb-right{display:flex;align-items:center;gap:8px}
+  .status{font-family:'Chakra Petch';font-size:10px;letter-spacing:.22em;color:var(--muted);display:flex;align-items:center;gap:6px;padding:5px 10px;border:1px solid var(--line);border-radius:20px;background:var(--glass)}
+  .status .live{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);animation:blink 2.4s ease-in-out infinite}
+  @keyframes blink{0%,100%{opacity:1}50%{opacity:.35}}
+  .gear{width:34px;height:34px;border-radius:10px;border:1px solid var(--line);background:var(--glass);
+    color:var(--muted);font-size:16px;display:grid;place-items:center;cursor:pointer}
+  .gear:active{transform:scale(.94)}
+
+  .core{position:relative; height:250px; display:grid; place-items:center; margin:6px 0 2px}
+  .core svg{position:absolute; inset:0; margin:auto; width:250px; height:250px}
+  .ring-rot{transform-origin:125px 125px; animation:spin 26s linear infinite}
+  .ring-rot.rev{animation-duration:40s; animation-direction:reverse}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .core .readout{position:relative; text-align:center; z-index:2}
+  .core .time{font-family:'Chakra Petch';font-weight:600;font-size:46px;line-height:1;color:#fff;text-shadow:0 0 24px var(--accent-glow)}
+  .core .time .sec{font-size:18px;color:var(--accent);vertical-align:top;margin-left:2px;letter-spacing:.1em}
+  .core .date{font-family:'Chakra Petch';font-size:11px;letter-spacing:.28em;color:var(--muted);margin-top:8px;text-transform:uppercase}
+  .core .greet{font-size:13px;color:var(--ice);margin-top:12px;font-weight:500}
+  .core .greet b{color:var(--accent);cursor:pointer;border-bottom:1px dashed var(--line-strong);padding-bottom:1px}
+  .pulse{animation:pulse 3.6s ease-in-out infinite}
+  @keyframes pulse{0%,100%{opacity:.5}50%{opacity:1}}
+
+  .hero{position:relative;border:1px solid var(--line);border-radius:18px;padding:18px;
+    background:linear-gradient(160deg,var(--glass2),rgba(10,17,32,.6));box-shadow:var(--shadow);
+    overflow:hidden;cursor:pointer;transition:transform .18s ease,border-color .18s ease}
+  .hero:active{transform:scale(.985);border-color:var(--line-strong)}
+  .hero::after{content:"";position:absolute;right:-40px;top:-40px;width:160px;height:160px;border-radius:50%;background:radial-gradient(circle,var(--accent-weak),transparent 70%)}
+  .hero .lbl{font-family:'Chakra Petch';font-size:10px;letter-spacing:.24em;color:var(--muted);text-transform:uppercase;display:flex;align-items:center;gap:8px}
+  .hero .bal{font-family:'Chakra Petch';font-weight:600;font-size:38px;margin:8px 0 4px;color:#fff}
+  .hero .bal .cur{font-size:20px;color:var(--accent-2);margin-right:4px}
+  .hero .trend{font-size:12px;color:var(--green);display:flex;align-items:center;gap:6px}
+  .hero .spark{position:absolute;right:16px;bottom:14px;opacity:.9}
+  .chev{color:var(--muted);font-size:12px}
+
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
+  .tile{position:relative;border:1px solid var(--line);border-radius:16px;padding:14px;background:var(--glass);
+    min-height:112px;cursor:pointer;display:flex;flex-direction:column;justify-content:space-between;
+    transition:transform .18s ease,border-color .18s ease,background .18s ease}
+  .tile:active{transform:scale(.97)}
+  .tile:hover{border-color:var(--line-strong);background:var(--glass2)}
+  .tile .thead{display:flex;align-items:center;justify-content:space-between}
+  .tile .ico{width:32px;height:32px;border-radius:9px;border:1px solid var(--line);display:grid;place-items:center;background:var(--accent-weak);color:var(--accent)}
+  .tile .tag{font-family:'Chakra Petch';font-size:9px;letter-spacing:.18em;color:var(--muted);text-transform:uppercase}
+  .tile .big{font-family:'Chakra Petch';font-weight:600;font-size:24px;color:#fff;margin-top:10px;line-height:1}
+  .tile .big small{font-size:13px;color:var(--muted);font-weight:400}
+  .tile .sub{font-size:12px;color:var(--muted);margin-top:5px}
+  .tile.alert .ico{color:var(--amber);border-color:rgba(255,181,71,.3);background:rgba(255,181,71,.07)}
+  .tile.alert .dotmark{position:absolute;top:12px;right:12px;width:7px;height:7px;border-radius:50%;background:var(--amber);box-shadow:0 0 8px var(--amber)}
+
+  .dock{position:fixed;left:0;right:0;bottom:0;z-index:5;padding:12px 16px calc(12px + env(safe-area-inset-bottom));background:linear-gradient(to top,var(--void) 55%,transparent)}
+  .dock-inner{max-width:520px;margin:0 auto;display:flex;align-items:center;gap:10px;border:1px solid var(--line-strong);border-radius:16px;padding:8px 8px 8px 16px;background:rgba(10,17,32,.85);backdrop-filter:blur(12px);box-shadow:var(--shadow)}
+  .dock-inner input{flex:1;background:none;border:none;color:var(--text);font-size:15px;font-family:'Inter'}
+  .dock-inner input::placeholder{color:var(--muted)} .dock-inner input:focus{outline:none}
+  .mic{width:44px;height:44px;border-radius:12px;border:1px solid var(--line-strong);background:linear-gradient(135deg,var(--accent-soft),var(--accent-weak));color:var(--accent);font-size:18px;display:grid;place-items:center;cursor:pointer;flex-shrink:0}
+  .mic.active{animation:micpulse 1.1s ease-in-out infinite}
+  @keyframes micpulse{0%,100%{box-shadow:0 0 0 0 var(--accent-glow)}50%{box-shadow:0 0 0 8px transparent}}
+
+  .scrim{position:fixed;inset:0;z-index:20;background:rgba(3,6,12,.7);backdrop-filter:blur(4px);opacity:0;pointer-events:none;transition:opacity .25s}
+  .scrim.open{opacity:1;pointer-events:auto}
+  .sheet{position:fixed;left:0;right:0;bottom:0;z-index:21;max-width:520px;margin:0 auto;background:linear-gradient(180deg,var(--void2),var(--void));border:1px solid var(--line-strong);border-bottom:none;border-radius:22px 22px 0 0;padding:10px 20px calc(24px + env(safe-area-inset-bottom));transform:translateY(102%);transition:transform .3s cubic-bezier(.22,1,.36,1);box-shadow:0 -20px 60px rgba(0,0,0,.6);max-height:86vh;overflow-y:auto}
+  .sheet.open{transform:translateY(0)}
+  .handle{width:40px;height:4px;border-radius:4px;background:var(--line-strong);margin:6px auto 16px}
+  .sheet h2{font-family:'Chakra Petch';font-size:17px;letter-spacing:.06em;margin:0 0 4px;color:#fff;display:flex;align-items:center;gap:10px}
+  .sh-sub{font-size:12px;color:var(--muted);margin-bottom:18px;font-family:'Chakra Petch';letter-spacing:.14em;text-transform:uppercase}
+  .row{display:flex;align-items:center;justify-content:space-between;padding:13px 0;border-bottom:1px solid var(--line)}
+  .row:last-child{border-bottom:none}
+  .row .rl{font-size:14px;color:var(--text)} .row .rl small{display:block;color:var(--muted);font-size:11px;margin-top:2px}
+  .row .rv{font-family:'Chakra Petch';font-size:15px;color:var(--ice);font-weight:500}
+  .row .rv.pos{color:var(--green)} .row .rv.neg{color:var(--amber)}
+  .note{margin-top:18px;font-size:12px;color:var(--muted);line-height:1.5;border:1px dashed var(--line);border-radius:12px;padding:12px}
+
+  /* ---- Settings ---- */
+  .set-sec{font-family:'Chakra Petch';font-size:11px;letter-spacing:.2em;color:var(--accent);text-transform:uppercase;margin:22px 0 8px}
+  .field{margin-bottom:12px}
+  .field label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px}
+  .field input{width:100%;padding:11px 12px;border-radius:11px;border:1px solid var(--line);background:var(--glass);color:var(--text);font-size:15px;font-family:'Inter'}
+  .field input:focus{outline:none;border-color:var(--accent)}
+  .two{display:flex;gap:10px} .two .field{flex:1}
+  .sw{display:flex;align-items:center;justify-content:space-between;padding:11px 0;border-bottom:1px solid var(--line)}
+  .sw:last-child{border-bottom:none}
+  .sw span{font-size:14px}
+  .sw input{display:none}
+  .sw .track{width:44px;height:26px;border-radius:20px;background:var(--glass2);border:1px solid var(--line);position:relative;transition:.2s;flex-shrink:0}
+  .sw .track::after{content:"";position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;background:var(--muted);transition:.2s}
+  .sw input:checked + .track{background:var(--accent-soft);border-color:var(--accent)}
+  .sw input:checked + .track::after{transform:translateX(18px);background:var(--accent)}
+  .swatches{display:flex;gap:12px;margin-top:4px}
+  .sw-c{width:34px;height:34px;border-radius:50%;border:2px solid transparent;background:var(--c);cursor:pointer;box-shadow:0 0 12px -2px var(--c)}
+  .sw-c.on{border-color:#fff}
+  .savebar{margin-top:20px;font-size:12px;color:var(--muted);text-align:center}
+  @media (prefers-reduced-motion:reduce){*{animation:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="topbar">
+    <div class="brand"><div class="glyph"><span></span></div><h1>NEXUS</h1></div>
+    <div class="tb-right">
+      <div class="status"><span class="live"></span>ONLINE</div>
+      <button class="gear" id="gear" aria-label="Einstellungen">⚙</button>
+    </div>
+  </div>
+
+  <div class="core">
+    <svg viewBox="0 0 250 250" fill="none">
+      <circle cx="125" cy="125" r="118" stroke="rgba(120,200,255,.10)" stroke-width="1"/>
+      <g class="ring-rot"><circle cx="125" cy="125" r="108" stroke="var(--accent)" stroke-opacity=".35" stroke-width="1.5" stroke-dasharray="4 10"/></g>
+      <circle cx="125" cy="125" r="96" stroke="rgba(120,200,255,.08)" stroke-width="8"/>
+      <circle class="pulse" cx="125" cy="125" r="96" stroke="var(--accent)" stroke-width="2.5" stroke-dasharray="150 453" stroke-linecap="round" transform="rotate(-90 125 125)"/>
+      <g class="ring-rot rev"><circle cx="125" cy="125" r="80" stroke="var(--accent)" stroke-opacity=".22" stroke-width="1" stroke-dasharray="2 6"/><circle cx="125" cy="17" r="2.5" fill="var(--accent)"/></g>
+    </svg>
+    <div class="readout">
+      <div class="time" id="clock">--:--<span class="sec" id="sec">00</span></div>
+      <div class="date" id="date">— —</div>
+      <div class="greet" id="greet">Willkommen zurück, <b id="name">Commander</b></div>
+    </div>
+  </div>
+
+  <div class="hero" data-detail="finance">
+    <div class="lbl">Gesamtvermögen · Girokonto <span class="chev">▸ Details</span></div>
+    <div class="bal"><span class="cur">€</span><span id="balMain">4.283</span><span id="balCent" style="color:var(--accent-2)">,50</span></div>
+    <div class="trend">▲ +2,4 % diesen Monat &nbsp;·&nbsp; +€214,80</div>
+    <svg class="spark" width="120" height="42" viewBox="0 0 120 42" fill="none">
+      <polyline points="0,34 18,30 34,32 52,22 70,26 88,14 104,18 120,6" stroke="var(--accent)" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+  </div>
+
+  <div class="grid" id="grid"></div>
+</div>
+
+<div class="dock"><div class="dock-inner">
+  <input id="ask" type="text" placeholder="Frag NEXUS etwas…">
+  <button class="mic" id="mic" aria-label="Sprechen">🎤</button>
+</div></div>
+
+<div class="scrim" id="scrim"></div>
+<div class="sheet" id="sheet" role="dialog" aria-modal="true">
+  <div class="handle"></div>
+  <div id="sheetBody"></div>
+</div>
+
+<script>
+  const root=document.documentElement;
+  const $=id=>document.getElementById(id);
+
+  // ---------- State ----------
+  const DEF={ name:'Commander', balMain:'4.283', balCent:',50', accent:'cyan',
+    tiles:{termine:true,aufgaben:true,notizen:true,gesundheit:true,mail:true,wetter:true,zuhause:false} };
+  let state=Object.assign({}, DEF, JSON.parse(localStorage.getItem('nexus_state')||'{}'));
+  state.tiles=Object.assign({}, DEF.tiles, state.tiles||{});
+  const save=()=>localStorage.setItem('nexus_state', JSON.stringify(state));
+
+  // ---------- Accent themes ----------
+  const PAL={cyan:'#38e0ff', violett:'#9b7bff', gruen:'#54e6a8', gold:'#ffb547', pink:'#ff6fae'};
+  function hexRgba(hex,a){const n=parseInt(hex.slice(1),16);return `rgba(${n>>16&255},${n>>8&255},${n&255},${a})`;}
+  function applyAccent(k){
+    const hex=PAL[k]||PAL.cyan;
+    root.style.setProperty('--accent',hex);
+    root.style.setProperty('--accent-2',hexRgba(hex,.65));
+    root.style.setProperty('--accent-weak',hexRgba(hex,.13));
+    root.style.setProperty('--accent-soft',hexRgba(hex,.22));
+    root.style.setProperty('--accent-glow',hexRgba(hex,.42));
+  }
+
+  // ---------- Tiles ----------
+  const TILES=[
+    {key:'termine',  icon:'▤', tag:'Heute',      big:'3',        sub:'Nächster: 14:30 · Zahnarzt', detail:'calendar'},
+    {key:'aufgaben', icon:'✓', tag:'Aufgaben',   big:'5 <small>offen</small>', sub:'2 fällig heute', detail:'tasks'},
+    {key:'notizen',  icon:'✎', tag:'Notizen',    big:'8',        sub:'Zuletzt: Einkaufsliste', detail:'notes'},
+    {key:'gesundheit',icon:'♥',tag:'Vitalwerte', big:'6.240',    sub:'Schritte · 71 % vom Ziel', detail:'health'},
+    {key:'mail',     icon:'✉', tag:'Posteingang',big:'4',        sub:'1 wichtig · 3 ungelesen', detail:'inbox', alert:true},
+    {key:'wetter',   icon:'☁', tag:'Wetter',     big:'18°',      sub:'Bewölkt · Regen ab 17 Uhr', detail:'weather'},
+    {key:'zuhause',  icon:'⌁', tag:'Zuhause',    big:'21°',      sub:'3 Geräte aktiv', detail:'energy'}
+  ];
+  function renderTiles(){
+    $('grid').innerHTML = TILES.filter(t=>state.tiles[t.key]!==false).map(t=>`
+      <div class="tile ${t.alert?'alert':''}" data-detail="${t.detail}">
+        ${t.alert?'<div class="dotmark"></div>':''}
+        <div class="thead"><div class="ico">${t.icon}</div><div class="tag">${t.tag}</div></div>
+        <div><div class="big">${t.big}</div><div class="sub">${t.sub}</div></div>
+      </div>`).join('');
+    document.querySelectorAll('#grid [data-detail]').forEach(el=>el.addEventListener('click',()=>{
+      if(el.dataset.detail==='weather' && !wx) initLocation();
+      openSheet(el.dataset.detail);
+    }));
+  }
+
+  // ---------- Apply state to UI ----------
+  function applyState(){
+    applyAccent(state.accent);
+    $('name').textContent=state.name;
+    $('balMain').textContent=state.balMain;
+    $('balCent').textContent=state.balCent;
+    renderTiles();
+  }
+
+  // ---------- Clock ----------
+  const days=['So','Mo','Di','Mi','Do','Fr','Sa'], months=['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
+  function tick(){
+    const n=new Date();
+    $('clock').firstChild.textContent=`${String(n.getHours()).padStart(2,'0')}:${String(n.getMinutes()).padStart(2,'0')}`;
+    $('sec').textContent=String(n.getSeconds()).padStart(2,'0');
+    $('date').textContent=`${days[n.getDay()]} · ${n.getDate()}. ${months[n.getMonth()]} ${n.getFullYear()}`;
+    const h=n.getHours(); const g=h<5?'Gute Nacht':h<11?'Guten Morgen':h<18?'Guten Tag':'Guten Abend';
+    $('greet').childNodes[0].textContent=g+', ';
+  }
+  setInterval(tick,1000);
+
+  $('name').onclick=()=>{const v=prompt('Wie soll NEXUS dich nennen?',state.name);if(v&&v.trim()){state.name=v.trim();save();applyState();}};
+
+  // ---------- Detail sheets ----------
+  const scrim=$('scrim'), sheet=$('sheet'), body=$('sheetBody');
+  const details={
+    finance:{icon:'€',title:'Finanzen',sub:'Konto · Vermögen',rows:[['Girokonto','€3.120,50','pos'],['Tagesgeld','€1.163,00','pos'],['Ausgaben diesen Monat','−€1.847,20','neg'],['Größte Position','Miete · €920,00',''],['Nächste Abbuchung','Strom · €78 · in 3 Tagen','']],note:'Demo-Werte. Kontostand kannst du in den Einstellungen (⚙) anpassen; später verbinden wir dein echtes Konto.'},
+    calendar:{icon:'▤',title:'Termine heute',sub:'3 Ereignisse',rows:[['14:30 · Zahnarzt','Praxis Dr. Bauer',''],['17:00 · Team-Call','Videokonferenz',''],['19:30 · Sport','Fitnessstudio','']],note:'Später an deinen Kalender angebunden.'},
+    tasks:{icon:'✓',title:'Aufgaben',sub:'5 offen · 2 heute fällig',rows:[['Rechnung bezahlen','Heute fällig','neg'],['Rückruf Werkstatt','Heute fällig','neg'],['Geschenk besorgen','Diese Woche',''],['Steuerunterlagen','Nächste Woche',''],['Buch zurückgeben','Kein Datum','']],note:'Wird später mit deiner To-do-App synchronisiert.'},
+    notes:{icon:'✎',title:'Notizen',sub:'8 Notizen',rows:[['Einkaufsliste','Milch, Brot, Kaffee …',''],['Ideen App','3 Punkte',''],['Passwörter Hinweis','—',''],['Geschenkideen','2 Einträge',''],['Zitate','—','']],note:'Später mit deiner Notiz-App verbunden.'},
+    health:{icon:'♥',title:'Vitalwerte',sub:'Heute',rows:[['Schritte','6.240 / 8.800',''],['Aktive Energie','412 kcal','pos'],['Puls (Ruhe)','62 bpm',''],['Schlaf letzte Nacht','7 h 12 min','pos'],['Stehstunden','9 / 12','']],note:'Verbindet sich später mit Apple Health / Google Fit.'},
+    inbox:{icon:'✉',title:'Posteingang',sub:'4 neue Nachrichten',rows:[['Vermieter · Wichtig','Nebenkostenabrechnung','neg'],['Amazon','Bestellung versandt',''],['Newsletter','Wochenrückblick',''],['Unbekannt','Betreff: Ihr Gewinn …','']],note:'Später mit deinem Mail-Postfach verbunden.'},
+    weather:{icon:'☁',title:'Wetter',sub:'Dein Standort',rows:[['Jetzt','18° · Bewölkt',''],['Gefühlt','16°',''],['Regen','ab 17:00 · 80 %','neg'],['Höchstwert','21°','pos'],['Wind','14 km/h','']],note:'Nutzt später deinen Standort für echte Vorhersagen.'},
+    energy:{icon:'⌁',title:'Zuhause',sub:'Smart-Home',rows:[['Wohnzimmer','21° · Heizung an',''],['Lichter','2 an',''],['Stromverbrauch heute','4,8 kWh',''],['Waschmaschine','Fertig in 22 min',''],['Türschloss','Verriegelt','pos']],note:'Bindet später deine Smart-Home-Geräte ein.'}
+  };
+  function openSheet(key){
+    let d=details[key]; if(!d)return;
+    if(key==='weather' && wx){
+      const w=wmo(wx.code)[0];
+      d={icon:'☁',title:'Wetter',sub:wx.city||'Dein Standort',rows:[
+        ['Jetzt',`${wx.temp}° · ${w}`,''],
+        ['Gefühlt',`${wx.feels}°`,''],
+        ['Höchst / Tief',`${wx.hi}° / ${wx.lo}°`,''],
+        ['Regen heute',`${wx.pop ?? '—'} %`, (wx.pop>=50?'neg':'')],
+        ['Wind',`${wx.wind} km/h`,'']
+      ],note:'Live-Daten von Open-Meteo, basierend auf deinem Standort. Quelle: open-meteo.com (CC BY 4.0).'};
+    }
+    body.innerHTML=`<h2><span style="color:var(--accent)">${d.icon}</span> ${d.title}</h2><div class="sh-sub">${d.sub}</div>`+
+      d.rows.map(r=>`<div class="row"><div class="rl">${r[0]}</div><div class="rv ${r[2]}">${r[1]}</div></div>`).join('')+
+      `<div class="note">↯ ${d.note}</div>`;
+    openPanel();
+  }
+  function openPanel(){scrim.classList.add('open');sheet.classList.add('open');}
+  function closePanel(){scrim.classList.remove('open');sheet.classList.remove('open');}
+  scrim.addEventListener('click',closePanel);
+  document.querySelector('.hero').addEventListener('click',()=>openSheet('finance'));
+
+  // ---------- Settings ----------
+  function openSettings(){
+    const tileNames={termine:'Termine',aufgaben:'Aufgaben',notizen:'Notizen',gesundheit:'Gesundheit & Sport',mail:'Mail & Nachrichten',wetter:'Wetter',zuhause:'Zuhause / Smart-Home'};
+    body.innerHTML=`
+      <h2><span style="color:var(--accent)">⚙</span> Einstellungen</h2>
+      <div class="sh-sub">Alles änderbar · wird gespeichert</div>
+
+      <div class="set-sec">Profil</div>
+      <div class="field"><label>Name / Anrede</label><input id="s_name" value="${state.name}"></div>
+
+      <div class="set-sec">Finanzen</div>
+      <div class="two">
+        <div class="field"><label>Kontostand (Euro)</label><input id="s_balMain" value="${state.balMain}"></div>
+        <div class="field"><label>Cent</label><input id="s_balCent" value="${state.balCent}"></div>
+      </div>
+
+      <div class="set-sec">Kacheln anzeigen</div>
+      ${Object.keys(tileNames).map(k=>`
+        <label class="sw"><span>${tileNames[k]}</span>
+          <input type="checkbox" data-tile="${k}" ${state.tiles[k]!==false?'checked':''}><span class="track"></span>
+        </label>`).join('')}
+
+      <div class="set-sec">Akzentfarbe</div>
+      <div class="swatches">
+        ${Object.keys(PAL).map(k=>`<button class="sw-c ${state.accent===k?'on':''}" data-accent="${k}" style="--c:${PAL[k]}"></button>`).join('')}
+      </div>
+
+      <div class="savebar">Änderungen werden sofort übernommen ✓</div>`;
+    // wire inputs
+    $('s_name').addEventListener('input',e=>{state.name=e.target.value||'Commander';save();$('name').textContent=state.name;});
+    $('s_balMain').addEventListener('input',e=>{state.balMain=e.target.value;save();$('balMain').textContent=state.balMain;});
+    $('s_balCent').addEventListener('input',e=>{state.balCent=e.target.value;save();$('balCent').textContent=state.balCent;});
+    body.querySelectorAll('[data-tile]').forEach(cb=>cb.addEventListener('change',e=>{state.tiles[e.target.dataset.tile]=e.target.checked;save();renderTiles();}));
+    body.querySelectorAll('[data-accent]').forEach(btn=>btn.addEventListener('click',e=>{
+      state.accent=btn.dataset.accent;save();applyAccent(state.accent);
+      body.querySelectorAll('.sw-c').forEach(b=>b.classList.toggle('on',b.dataset.accent===state.accent));
+    }));
+    openPanel();
+  }
+  $('gear').addEventListener('click',openSettings);
+
+  // ---------- Assistant ----------
+  const ask=$('ask'), mic=$('mic');
+  ask.addEventListener('keydown',e=>{if(e.key==='Enter'&&ask.value.trim()){const q=ask.value.trim();ask.value='';
+    body.innerHTML=`<h2><span style="color:var(--accent)">◈</span> NEXUS</h2><div class="sh-sub">Anfrage empfangen</div>
+      <div class="row"><div class="rl">Du fragst</div><div class="rv">„${q}"</div></div>
+      <div class="note">↯ Das KI-Modell hängen wir im nächsten großen Schritt an — dann antwortet NEXUS hier wirklich.</div>`;openPanel();}});
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition; let rec=null;
+  if(SR){rec=new SR();rec.lang='de-DE';rec.interimResults=false;rec.onresult=e=>{ask.value=e.results[0][0].transcript;};rec.onend=()=>mic.classList.remove('active');}
+  mic.addEventListener('click',()=>{if(!rec){alert('Spracheingabe wird hier nicht unterstützt.');return;}mic.classList.toggle('active');mic.classList.contains('active')?rec.start():rec.stop();});
+
+  // ---------- Standort + Wetter (Open-Meteo, kein Schlüssel nötig) ----------
+  let wx=null;
+  const WMO={0:['Klar','☀'],1:['Überw. klar','🌤'],2:['Teils bewölkt','⛅'],3:['Bewölkt','☁'],
+    45:['Nebel','🌫'],48:['Reifnebel','🌫'],51:['Leichter Niesel','🌦'],53:['Niesel','🌦'],55:['Starker Niesel','🌦'],
+    61:['Leichter Regen','🌧'],63:['Regen','🌧'],65:['Starker Regen','🌧'],66:['Gefrierregen','🌧'],67:['Gefrierregen','🌧'],
+    71:['Leichter Schnee','🌨'],73:['Schnee','🌨'],75:['Starker Schnee','🌨'],77:['Schneegriesel','🌨'],
+    80:['Schauer','🌦'],81:['Schauer','🌦'],82:['Heftige Schauer','⛈'],85:['Schneeschauer','🌨'],86:['Schneeschauer','🌨'],
+    95:['Gewitter','⛈'],96:['Gewitter, Hagel','⛈'],99:['Gewitter, Hagel','⛈']};
+  const wmo=c=>WMO[c]||['—','☁'];
+
+  function updateWeatherTile(){
+    if(!wx)return;
+    const tile=document.querySelector('#grid [data-detail="weather"]'); if(!tile)return;
+    const [txt,ic]=wmo(wx.code);
+    tile.querySelector('.big').textContent=wx.temp+'°';
+    tile.querySelector('.sub').textContent=`${txt}${wx.city?' · '+wx.city:''}`;
+    tile.querySelector('.ico').textContent=ic;
+  }
+  async function loadWeather(lat,lon,city){
+    try{
+      const u=`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=auto`;
+      const d=await (await fetch(u)).json();
+      const c=d.current, dy=d.daily;
+      wx={temp:Math.round(c.temperature_2m),feels:Math.round(c.apparent_temperature),code:c.weather_code,
+        wind:Math.round(c.wind_speed_10m),hi:Math.round(dy.temperature_2m_max[0]),lo:Math.round(dy.temperature_2m_min[0]),
+        pop:dy.precipitation_probability_max[0],city:city||''};
+      updateWeatherTile();
+    }catch(e){ setWeatherSub('Wetter nicht erreichbar'); }
+  }
+  function setWeatherSub(t){const tile=document.querySelector('#grid [data-detail="weather"]');if(tile)tile.querySelector('.sub').textContent=t;}
+  function initLocation(){
+    if(!navigator.geolocation){setWeatherSub('Standort nicht verfügbar');return;}
+    setWeatherSub('Standort wird ermittelt …');
+    navigator.geolocation.getCurrentPosition(async pos=>{
+      const {latitude:la,longitude:lo}=pos.coords;
+      let city='';
+      try{const gj=await (await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${la}&longitude=${lo}&localityLanguage=de`)).json();
+        city=gj.city||gj.locality||gj.principalSubdivision||'';}catch(e){}
+      loadWeather(la,lo,city);
+    }, ()=>setWeatherSub('Tippen · Standort erlauben'),
+    {enableHighAccuracy:false,timeout:9000,maximumAge:600000});
+  }
+
+  // ---------- Init ----------
+  applyState(); tick(); initLocation();
+</script>
+</body>
+</html>
